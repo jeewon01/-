@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>이화여고 실시간 급식표</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Noto Sans KR', sans-serif;
+      background: linear-gradient(180deg, #8bb9f1, #50ad69);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: white;
+    }
+    .card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 20px;
+      width: 360px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+    h2 { margin: 10px 0; }
+    ul { list-style: none; padding: 0; margin: 10px 0 20px; }
+    li { margin: 5px 0; }
+    .date {
+      background: rgba(255,255,255,0.2);
+      border-radius: 10px;
+      padding: 6px 12px;
+      font-size: 14px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="date" id="date-display"></div>
+
+    <h2>🍽 중식</h2>
+    <ul id="lunch-list"></ul>
+
+    <h2>🍽 석식</h2>
+    <ul id="dinner-list"></ul>
+  </div>
+
+  <script>
+    const KEY = "c8cc4c28d8b74ca08899a891c400ef01";      
+    const OFFICE = "B10";                 
+    const SCHOOL = "7010227";        
+
+    const today = new Date();
+
+    function formatDate(d) {
+      return d.getFullYear().toString()
+           + String(d.getMonth() + 1).padStart(2, '0')
+           + String(d.getDate()).padStart(2, '0');
+    }
+
+    function displayDate(d) {
+      return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+    }
+
+    async function fetchMeal(date, mealCode) {
+      const ymd = formatDate(date);
+      const url = `https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=${KEY}&Type=json`
+                + `&ATPT_OFCDC_SC_CODE=${OFFICE}`
+                + `&SD_SCHUL_CODE=${SCHOOL}`
+                + `&MMEAL_SC_CODE=${mealCode}`
+                + `&MLSV_YMD=${ymd}`;
+
+      try {
+        const res = await fetch(url);
+        const json = await res.json();
+        const dish = json.mealServiceDietInfo?.[1]?.row?.[0]?.DDISH_NM || "";
+        return dish
+          ? dish.split("<br/>").map(item => item.replace(/\([^)]*\)/g, "").trim())
+          : ["급식 정보 없음"];
+      } catch (err) {
+        console.error(err);
+        return ["불러오기 오류"];
+      }
+    }
+
+    async function loadTodayMeals() {
+      document.getElementById("date-display").textContent = displayDate(today);
+
+      const [lunch, dinner] = await Promise.all([
+        fetchMeal(today, 2),  // 중식
+        fetchMeal(today, 3)   // 석식
+      ]);
+
+      const lunchListEl = document.getElementById("lunch-list");
+      lunchListEl.innerHTML = "";
+      lunch.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        lunchListEl.appendChild(li);
+      });
+
+      const dinnerListEl = document.getElementById("dinner-list");
+      dinnerListEl.innerHTML = "";
+      dinner.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        dinnerListEl.appendChild(li);
+      });
+    }
+
+    loadTodayMeals();
+  </script>
+</body>
+</html>
