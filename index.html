@@ -2,109 +2,262 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
   <title>이화여고 실시간 급식표</title>
   <style>
+    :root {
+      color-scheme: light;
+      --page-background: #edf4fb;
+      --card-background: #ffffff;
+      --text-color: #172333;
+      --muted-background: #e7eef6;
+      --button-background: #dce8f5;
+      --button-text: #172333;
+      --border-color: #c9d6e4;
+      --shadow-color: rgb(20 40 60 / 12%);
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --page-background: #000000;
+      --card-background: #101010;
+      --text-color: #f4f4f4;
+      --muted-background: #1c1c1c;
+      --button-background: #292929;
+      --button-text: #ffffff;
+      --border-color: #454545;
+      --shadow-color: rgb(0 0 0 / 45%);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --page-background: #000000;
+        --card-background: #101010;
+        --text-color: #f4f4f4;
+        --muted-background: #1c1c1c;
+        --button-background: #292929;
+        --button-text: #ffffff;
+        --border-color: #454545;
+        --shadow-color: rgb(0 0 0 / 45%);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
+      min-height: 100vh;
       margin: 0;
-      font-family: 'Noto Sans KR', sans-serif;
-      background: linear-gradient(180deg, #8bb9f1, #50ad69);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      color: white;
+      padding: 24px;
+      display: grid;
+      place-items: center;
+      background: var(--page-background);
+      color: var(--text-color);
+      font-family: "Noto Sans KR", system-ui, sans-serif;
     }
+
     .card {
-      background: rgba(255,255,255,0.1);
+      width: min(100%, 400px);
+      padding: 24px;
+      background: var(--card-background);
+      border: 1px solid var(--border-color);
       border-radius: 20px;
-      padding: 20px;
-      width: 360px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      box-shadow: 0 8px 20px var(--shadow-color);
     }
-    h2 { margin: 10px 0; }
-    ul { list-style: none; padding: 0; margin: 10px 0 20px; }
-    li { margin: 5px 0; }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+
+    h2 {
+      margin: 22px 0 10px;
+      font-size: 1.1rem;
+    }
+
+    .theme-toggle {
+      min-height: 44px;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 999px;
+      background: var(--button-background);
+      color: var(--button-text);
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .theme-toggle:focus-visible {
+      outline: 3px solid #4b8bd8;
+      outline-offset: 3px;
+    }
+
     .date {
-      background: rgba(255,255,255,0.2);
+      padding: 9px 12px;
       border-radius: 10px;
-      padding: 6px 12px;
-      font-size: 14px;
+      background: var(--muted-background);
       text-align: center;
+      font-size: 0.95rem;
+    }
+
+    ul {
+      min-height: 1.5em;
+      margin: 0;
+      padding-left: 1.25em;
+    }
+
+    li {
+      margin: 6px 0;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 420px) {
+      body {
+        padding: 16px;
+      }
+
+      .card {
+        padding: 20px;
+      }
+
+      .card-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
     }
   </style>
+  <script>
+    (() => {
+      let savedTheme = null;
+      try {
+        savedTheme = localStorage.getItem("meal-theme");
+      } catch (error) {
+        // 저장 기능을 사용할 수 없어도 기본 테마로 페이지를 표시합니다.
+      }
+
+      const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+      const initialTheme = savedTheme === "dark" || savedTheme === "light"
+        ? savedTheme
+        : prefersDark ? "dark" : "light";
+      document.documentElement.dataset.theme = initialTheme;
+    })();
+  </script>
 </head>
 <body>
-  <div class="card">
+  <main class="card">
+    <header class="card-header">
+      <h1>이화여고 급식 알리미</h1>
+      <button
+        class="theme-toggle"
+        id="theme-toggle"
+        type="button"
+      >🌙 다크 모드로 전환</button>
+    </header>
+
     <div class="date" id="date-display"></div>
 
-    <h2>🍽 중식</h2>
-    <ul id="lunch-list"></ul>
+    <section aria-labelledby="lunch-heading">
+      <h2 id="lunch-heading">🍽 중식</h2>
+      <ul id="lunch-list"></ul>
+    </section>
 
-    <h2>🍽 석식</h2>
-    <ul id="dinner-list"></ul>
-  </div>
+    <section aria-labelledby="dinner-heading">
+      <h2 id="dinner-heading">🍽 석식</h2>
+      <ul id="dinner-list"></ul>
+    </section>
+  </main>
 
   <script>
-    const KEY = "c8cc4c28d8b74ca08899a891c400ef01";      
-    const OFFICE = "B10";                 
-    const SCHOOL = "7010227";        
+    const themeButton = document.getElementById("theme-toggle");
 
-    const today = new Date();
+    function setTheme(theme, savePreference = false) {
+      const isDark = theme === "dark";
+      document.documentElement.dataset.theme = theme;
+      themeButton.textContent = isDark
+        ? "☀️ 라이트 모드로 전환"
+        : "🌙 다크 모드로 전환";
 
-    function formatDate(d) {
-      return d.getFullYear().toString()
-           + String(d.getMonth() + 1).padStart(2, '0')
-           + String(d.getDate()).padStart(2, '0');
+      if (savePreference) {
+        try {
+          localStorage.setItem("meal-theme", theme);
+        } catch (error) {
+          // 저장이 안 되더라도 현재 화면 테마는 바뀝니다.
+        }
+      }
     }
 
-    function displayDate(d) {
-      return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+    setTheme(document.documentElement.dataset.theme);
+
+    themeButton.addEventListener("click", () => {
+      const currentTheme = document.documentElement.dataset.theme;
+      setTheme(currentTheme === "dark" ? "light" : "dark", true);
+    });
+
+    const KEY = "c8cc4c28d8b74ca08899a891c400ef01";
+    const OFFICE = "B10";
+    const SCHOOL = "7010227";
+    const today = new Date();
+
+    function formatDate(date) {
+      return date.getFullYear().toString()
+        + String(date.getMonth() + 1).padStart(2, "0")
+        + String(date.getDate()).padStart(2, "0");
+    }
+
+    function displayDate(date) {
+      return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
     }
 
     async function fetchMeal(date, mealCode) {
       const ymd = formatDate(date);
       const url = `https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=${KEY}&Type=json`
-                + `&ATPT_OFCDC_SC_CODE=${OFFICE}`
-                + `&SD_SCHUL_CODE=${SCHOOL}`
-                + `&MMEAL_SC_CODE=${mealCode}`
-                + `&MLSV_YMD=${ymd}`;
+        + `&ATPT_OFCDC_SC_CODE=${OFFICE}`
+        + `&SD_SCHUL_CODE=${SCHOOL}`
+        + `&MMEAL_SC_CODE=${mealCode}`
+        + `&MLSV_YMD=${ymd}`;
 
       try {
-        const res = await fetch(url);
-        const json = await res.json();
+        const response = await fetch(url);
+        const json = await response.json();
         const dish = json.mealServiceDietInfo?.[1]?.row?.[0]?.DDISH_NM || "";
         return dish
           ? dish.split("<br/>").map(item => item.replace(/\([^)]*\)/g, "").trim())
           : ["급식 정보 없음"];
-      } catch (err) {
-        console.error(err);
+      } catch (error) {
+        console.error(error);
         return ["불러오기 오류"];
       }
+    }
+
+    function showMeals(listElement, meals) {
+      listElement.replaceChildren();
+      meals.forEach(item => {
+        const listItem = document.createElement("li");
+        listItem.textContent = item;
+        listElement.appendChild(listItem);
+      });
     }
 
     async function loadTodayMeals() {
       document.getElementById("date-display").textContent = displayDate(today);
 
       const [lunch, dinner] = await Promise.all([
-        fetchMeal(today, 2),  // 중식
-        fetchMeal(today, 3)   // 석식
+        fetchMeal(today, 2),
+        fetchMeal(today, 3)
       ]);
 
-      const lunchListEl = document.getElementById("lunch-list");
-      lunchListEl.innerHTML = "";
-      lunch.forEach(item => {
-        const li = document.createElement("li");
-        li.textContent = item;
-        lunchListEl.appendChild(li);
-      });
-
-      const dinnerListEl = document.getElementById("dinner-list");
-      dinnerListEl.innerHTML = "";
-      dinner.forEach(item => {
-        const li = document.createElement("li");
-        li.textContent = item;
-        dinnerListEl.appendChild(li);
-      });
+      showMeals(document.getElementById("lunch-list"), lunch);
+      showMeals(document.getElementById("dinner-list"), dinner);
     }
 
     loadTodayMeals();
